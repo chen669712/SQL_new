@@ -20,30 +20,30 @@ group by d
 use bnb_hive_db;
 insert overwrite table bnb_data_new_caliber
 partition (d = '${zdt.addDay(-1).format("yyyy-MM-dd")}')
-select search.d as `日期`
+select exposure.d as `日期`
   , count (distinct exposure.cid ) as `首页UV`
-  , count (distinct usesearch.cid ) as `使用搜索UV`
+  , count (distinct usesearch.cid )  as `使用搜索UV`
   , count (distinct search.cid ) as `完成搜索UV`
   , count (distinct list.cid) as `列表页UV`
-  , concat(cast(round(count(distinct list.cid)/count(distinct usesearch.cid),2)*100 as string),'%') as `S2L`
+  , concat(cast(round(count(distinct list.cid)/count (distinct usesearch.cid )*100,2) as string),'%') as `S2L`
   , count (distinct detail.cid) as `详情页UV`
-  , concat(cast(round(count(distinct detail.cid)/count(distinct list.cid),2)*100 as string),'%') as `L2D`
+  , concat(cast(round(count(distinct detail.cid)/count(distinct list.cid)*100,2) as string),'%') as `L2D`
   , count (distinct booking.cid) as `填写页UV`
-  , concat(cast(round(count(distinct booking.cid)/count(distinct detail.cid),2)*100 as string),'%') as `D2B`
+  , concat(cast(round(count(distinct booking.cid)/count(distinct detail.cid)*100,2) as string),'%') as `D2B`
   , count (distinct submit.cid) as `提交UV`
-  , concat(cast(round(count(distinct submit.cid)/count(distinct booking.cid),2)*100 as string),'%') as `B2O`
+  , concat(cast(round(count(distinct submit.cid)/count(distinct booking.cid)*100,2) as string),'%') as `B2O`
   , count (distinct pay.cid) as `支付UV`
   , count (distinct pay.orderid) as `支付单`
-  , concat(cast(round(count(distinct pay.orderid)/count(distinct search.cid),2)*100 as string),'%') as `S2O`
+  , concat(cast(round(count(distinct pay.orderid)/count(distinct search.cid)*100,2) as string),'%') as `S2O`
 from
-(select d
+(select distinct d
   , clientcode as cid
-from bnb_hive_db.bnb_pageview
+from dw_mobdb.factmbpageview
 where d >= '${zdt.addDay(-7).format("yyyy-MM-dd")}'
   and d <= '${zdt.addDay(-1).format("yyyy-MM-dd")}'
   and pagecode = '600003560') exposure
 left outer join
-(select d
+(select distinct d
   , cid as cid
 from bnb_hive_db.bnb_tracelog
 where d >= '${zdt.addDay(-7).format("yyyy-MM-dd")}'
@@ -121,4 +121,4 @@ where to_date(orderdate)>='${zdt.addDay(-7).format("yyyy-MM-dd")}'
   and d>='${zdt.addDay(-7).format("yyyy-MM-dd")}'
   and d<='${zdt.addDay(-1).format("yyyy-MM-dd")}'
   and orderstatus not in ('W')) pay on pay.d = search.d and pay.cid=search.cid
-group by search.d;
+group by exposure.d;
